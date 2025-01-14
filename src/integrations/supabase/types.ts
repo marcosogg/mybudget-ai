@@ -139,6 +139,7 @@ export type Database = {
           created_at: string | null
           id: string
           month: string
+          status: string
           transaction_count: number
           user_id: string
           valid_transaction_count: number
@@ -147,6 +148,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           month: string
+          status?: string
           transaction_count?: number
           user_id: string
           valid_transaction_count?: number
@@ -155,6 +157,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           month?: string
+          status?: string
           transaction_count?: number
           user_id?: string
           valid_transaction_count?: number

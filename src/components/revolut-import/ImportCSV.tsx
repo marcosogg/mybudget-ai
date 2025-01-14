@@ -20,6 +20,7 @@ import Papa from "papaparse";
 import { Transaction } from "./types";
 import { validateTransaction } from "./utils/validateTransaction";
 import { TransactionTable } from "./TransactionTable";
+import { importService } from "@/services/ImportService";
 
 const ImportCSV = () => {
   const { toast } = useToast();
@@ -57,18 +58,32 @@ const ImportCSV = () => {
 
     try {
       Papa.parse(selectedFile, {
-        complete: (results) => {
+        complete: async (results) => {
           const validatedTransactions = results.data
             .filter((row: any) => Object.keys(row).length > 1)
             .map((row: any) => validateTransaction(row));
 
           setTransactions(validatedTransactions);
           
-          const validCount = validatedTransactions.filter(t => t.isValid).length;
-          toast({
-            title: "File processed successfully",
-            description: `${validCount} valid transactions found out of ${validatedTransactions.length} total`,
-          });
+          try {
+            await importService.saveTransactions(validatedTransactions, selectedMonth + "-01");
+            
+            const validCount = validatedTransactions.filter(t => t.isValid).length;
+            toast({
+              title: "Import successful",
+              description: `${validCount} valid transactions imported out of ${validatedTransactions.length} total`,
+            });
+
+            // Clear form after successful import
+            clearSelection();
+          } catch (error) {
+            console.error("Import error:", error);
+            toast({
+              variant: "destructive",
+              title: "Import failed",
+              description: "Failed to save transactions. Please try again.",
+            });
+          }
         },
         error: (error) => {
           console.error("Parsing error:", error);
