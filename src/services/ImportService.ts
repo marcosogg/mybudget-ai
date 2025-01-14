@@ -46,7 +46,8 @@ export class ImportService {
       };
     }
 
-    const response = data as ImportRPCResponse;
+    // First cast to unknown, then to our specific type
+    const response = data as unknown as ImportRPCResponse;
 
     return {
       success: true,
