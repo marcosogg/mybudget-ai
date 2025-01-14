@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
   title: z.string().min(1, "Title is required"),
-  target_amount: z.string().min(1, "Target amount is required").transform(Number),
+  target_amount: z.coerce.number().min(0, "Target amount must be positive"),
   target_date: z.string().optional(),
 });
 
@@ -28,13 +28,19 @@ export const FinancialGoalForm = ({ goalId }: FinancialGoalFormProps) => {
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
-      target_amount: "",
+      target_amount: 0,
       target_date: "",
     },
   });
 
   const onSubmit = async (values: FinancialGoalFormValues) => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error("User not authenticated");
+      }
+
       if (goalId) {
         const { error } = await supabase
           .from("financial_goals")
@@ -51,12 +57,15 @@ export const FinancialGoalForm = ({ goalId }: FinancialGoalFormProps) => {
           description: "Your financial goal has been updated successfully.",
         });
       } else {
-        const { error } = await supabase.from("financial_goals").insert({
-          title: values.title,
-          target_amount: values.target_amount,
-          target_date: values.target_date || null,
-          current_amount: 0,
-        });
+        const { error } = await supabase
+          .from("financial_goals")
+          .insert({
+            title: values.title,
+            target_amount: values.target_amount,
+            target_date: values.target_date || null,
+            current_amount: 0,
+            user_id: user.id,
+          });
 
         if (error) throw error;
         toast({
