@@ -1,16 +1,15 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import ImportCSV from "@/components/revolut-import/ImportCSV";
-import { useCurrentMonthTransactions, useCurrentMonthBudgets, useFinancialGoals } from "@/hooks/use-dashboard-queries";
+import { useCurrentMonthTransactions, useFinancialGoals } from "@/hooks/use-dashboard-queries";
 import { Skeleton } from "@/components/ui/skeleton";
+import { BudgetStatusCard } from "@/components/budget/BudgetStatusCard";
 
 const Index = () => {
   const navigate = useNavigate();
   const { data: transactions, isLoading: transactionsLoading } = useCurrentMonthTransactions();
-  const { data: budgets, isLoading: budgetsLoading } = useCurrentMonthBudgets();
   const { data: goals, isLoading: goalsLoading } = useFinancialGoals();
 
   useEffect(() => {
@@ -30,7 +29,6 @@ const Index = () => {
     return content;
   };
 
-  // Calculate totals with proper number handling
   const totalIncome = transactions
     ? transactions
         .filter(t => Number(t.amount) > 0)
@@ -80,21 +78,7 @@ const Index = () => {
           </Card>
 
           {/* Budget Status */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Budget Status</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {renderCardContent(
-                budgetsLoading,
-                budgets?.length ? (
-                  <p>Budget information loaded</p>
-                ) : (
-                  <p className="text-muted-foreground">Set up your monthly budget</p>
-                )
-              )}
-            </CardContent>
-          </Card>
+          <BudgetStatusCard />
 
           {/* Goals Progress */}
           <Card>
