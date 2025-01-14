@@ -15,36 +15,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Upload, XCircle } from "lucide-react";
 import Papa from "papaparse";
-
-interface Transaction {
-  date: string;
-  description: string;
-  amount: string;
-  category?: string;
-  isValid: boolean;
-  invalidReason?: string;
-}
-
-const CATEGORIES = [
-  "Food & Dining",
-  "Transportation",
-  "Shopping",
-  "Bills & Utilities",
-  "Entertainment",
-  "Health & Fitness",
-  "Travel",
-  "Other",
-] as const;
+import { Transaction } from "./types";
+import { validateTransaction } from "./utils/validateTransaction";
+import { TransactionTable } from "./TransactionTable";
 
 const ImportCSV = () => {
   const { toast } = useToast();
@@ -56,37 +31,6 @@ const ImportCSV = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const abortController = useRef<AbortController | null>(null);
-
-  const validateTransaction = (transaction: any): Transaction => {
-    const result: Transaction = {
-      date: transaction.Date || transaction.date || "",
-      description: transaction.Description || transaction.description || "",
-      amount: transaction.Amount || transaction.amount || "",
-      category: transaction.Category || transaction.category || "Other",
-      isValid: true,
-    };
-
-    // Validate date
-    if (!result.date || isNaN(Date.parse(result.date))) {
-      result.isValid = false;
-      result.invalidReason = "Invalid date format";
-    }
-
-    // Validate amount
-    const amount = parseFloat(result.amount);
-    if (isNaN(amount)) {
-      result.isValid = false;
-      result.invalidReason = "Invalid amount format";
-    }
-
-    // Validate description
-    if (!result.description || result.description.trim().length === 0) {
-      result.isValid = false;
-      result.invalidReason = "Missing description";
-    }
-
-    return result;
-  };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -254,58 +198,10 @@ const ImportCSV = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {transactions.map((transaction, index) => (
-                    <TableRow
-                      key={index}
-                      className={transaction.isValid ? "" : "opacity-60"}
-                    >
-                      <TableCell>{transaction.date}</TableCell>
-                      <TableCell>{transaction.description}</TableCell>
-                      <TableCell>{transaction.amount}</TableCell>
-                      <TableCell>
-                        <Select
-                          value={transaction.category}
-                          onValueChange={(value) => handleCategoryChange(index, value)}
-                          disabled={!transaction.isValid}
-                        >
-                          <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Select category" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {CATEGORIES.map((category) => (
-                              <SelectItem key={category} value={category}>
-                                {category}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                      <TableCell>
-                        {transaction.isValid ? (
-                          <span className="text-green-600">Valid</span>
-                        ) : (
-                          <span className="text-red-600">
-                            {transaction.invalidReason}
-                          </span>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            <TransactionTable 
+              transactions={transactions}
+              onCategoryChange={handleCategoryChange}
+            />
           </CardContent>
         </Card>
       )}
