@@ -49,21 +49,42 @@ const TaskDetails = () => {
           description,
           due_date,
           status,
-          creator:profiles!tasks_creator_id_fkey(
-            id,
-            username
-          ),
-          assignee:profiles!tasks_assignee_id_fkey(
-            id,
-            username
-          )
+          creator_id,
+          assignee_id
         `
         )
         .eq("id", id)
         .single();
 
       if (error) throw error;
-      return data as TaskDetails;
+
+      // Fetch creator profile
+      const { data: creatorProfile, error: creatorError } = await supabase
+        .from("profiles")
+        .select("username, id")
+        .eq("id", data.creator_id)
+        .single();
+
+      if (creatorError) throw creatorError;
+
+      // Fetch assignee profile if exists
+      let assigneeProfile = null;
+      if (data.assignee_id) {
+        const { data: assigneeData, error: assigneeError } = await supabase
+          .from("profiles")
+          .select("username, id")
+          .eq("id", data.assignee_id)
+          .single();
+
+        if (assigneeError) throw assigneeError;
+        assigneeProfile = assigneeData;
+      }
+
+      return {
+        ...data,
+        creator: creatorProfile,
+        assignee: assigneeProfile,
+      } as TaskDetails;
     },
   });
 
