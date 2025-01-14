@@ -72,9 +72,7 @@ export default function EventDetails() {
           description,
           start_time,
           end_time,
-          creator:creator_id (
-            username
-          )
+          creator:profiles!events_creator_id_fkey(username)
         `
         )
         .eq("id", id)
@@ -107,9 +105,7 @@ export default function EventDetails() {
         .select(
           `
           status,
-          user:user_id (
-            username
-          )
+          user:profiles!event_attendees_user_id_fkey(username)
         `
         )
         .eq("event_id", id);
