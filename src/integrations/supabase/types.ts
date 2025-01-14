@@ -134,6 +134,33 @@ export type Database = {
         }
         Relationships: []
       }
+      import_sessions: {
+        Row: {
+          created_at: string | null
+          id: string
+          month: string
+          transaction_count: number
+          user_id: string
+          valid_transaction_count: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          month: string
+          transaction_count?: number
+          user_id: string
+          valid_transaction_count?: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          month?: string
+          transaction_count?: number
+          user_id?: string
+          valid_transaction_count?: number
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           content: string | null
@@ -229,6 +256,10 @@ export type Database = {
           date: string
           description: string | null
           id: string
+          import_session_id: string | null
+          invalid_reason: string | null
+          is_valid: boolean | null
+          original_description: string | null
           type: string
           user_id: string
         }
@@ -239,6 +270,10 @@ export type Database = {
           date: string
           description?: string | null
           id?: string
+          import_session_id?: string | null
+          invalid_reason?: string | null
+          is_valid?: boolean | null
+          original_description?: string | null
           type: string
           user_id: string
         }
@@ -249,6 +284,10 @@ export type Database = {
           date?: string
           description?: string | null
           id?: string
+          import_session_id?: string | null
+          invalid_reason?: string | null
+          is_valid?: boolean | null
+          original_description?: string | null
           type?: string
           user_id?: string
         }
