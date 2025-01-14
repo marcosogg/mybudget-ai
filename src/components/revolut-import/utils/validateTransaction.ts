@@ -11,14 +11,29 @@ export const validateTransaction = (transaction: any): Transaction => {
     original_description: transaction.Description || transaction.description || ""
   };
 
-  // Validate date
-  if (!result.date || isNaN(Date.parse(result.date))) {
+  // Validate date - handle different date formats
+  try {
+    // Try to parse the date - Revolut uses DD/MM/YYYY format
+    const dateParts = result.date.split('/');
+    if (dateParts.length === 3) {
+      // Convert DD/MM/YYYY to YYYY-MM-DD
+      const [day, month, year] = dateParts;
+      result.date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    } else {
+      // Try parsing as ISO date (YYYY-MM-DD)
+      const isoDate = new Date(result.date);
+      if (isNaN(isoDate.getTime())) {
+        throw new Error("Invalid date format");
+      }
+      result.date = isoDate.toISOString().split('T')[0];
+    }
+  } catch (error) {
     result.isValid = false;
     result.invalidReason = "Invalid date format";
   }
 
   // Validate amount
-  const amount = parseFloat(result.amount);
+  const amount = parseFloat(result.amount.replace(/[^-0-9.]/g, ''));
   if (isNaN(amount)) {
     result.isValid = false;
     result.invalidReason = "Invalid amount format";

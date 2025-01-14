@@ -26,17 +26,11 @@ export class ImportService {
 
     // Convert transactions to plain objects that match the Json type
     const plainTransactions = transactions.map(t => {
-      // Ensure date is in YYYY-MM-DD format
-      const date = new Date(t.date);
-      if (isNaN(date.getTime())) {
-        throw new Error(`Invalid date format for transaction: ${t.description}`);
-      }
-      
       return {
-        amount: t.amount,
+        amount: parseFloat(t.amount.replace(/[^-0-9.]/g, '')),
         category: t.category || 'Other',
         description: t.description,
-        date: date.toISOString().split('T')[0], // Format as YYYY-MM-DD
+        date: t.date, // Date is already validated and formatted in validateTransaction
         type: t.type || 'expense', // Use the original type from the CSV
         is_valid: t.isValid,
         invalid_reason: t.invalidReason,
