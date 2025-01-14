@@ -122,7 +122,7 @@ const Auth = () => {
                 button: 'w-full',
                 anchor: 'text-teal-600 hover:text-teal-700',
                 message: 'text-red-600',
-                loading: 'animate-spin',
+                loader: 'animate-spin',
               },
             }}
             providers={[]}
