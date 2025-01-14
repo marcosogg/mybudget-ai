@@ -19,6 +19,11 @@ export class ImportService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("User not authenticated");
 
+    // Ensure month is in YYYY-MM format
+    if (!month.match(/^\d{4}-\d{2}$/)) {
+      throw new Error("Month must be in YYYY-MM format");
+    }
+
     // Convert transactions to plain objects that match the Json type
     const plainTransactions = transactions.map(t => ({
       amount: t.amount,
