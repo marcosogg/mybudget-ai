@@ -11,7 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 import Papa from "papaparse";
 import { validateTransaction } from "./utils/validateTransaction";
 import { TransactionTable } from "./TransactionTable";
@@ -26,6 +26,15 @@ const ImportCSV = () => {
   const [error, setError] = useState<string | null>(null);
 
   const handleImport = async (file: File, selectedMonth: string) => {
+    if (!file || !selectedMonth) {
+      toast({
+        variant: "destructive",
+        title: "Missing required fields",
+        description: "Please select a file and month to import.",
+      });
+      return;
+    }
+
     setIsProcessing(true);
     setError(null);
 
@@ -56,10 +65,13 @@ const ImportCSV = () => {
               const result = await importService.saveTransactions(validatedTransactions, selectedMonth);
               
               if (result.success) {
-                // Invalidate relevant queries after successful import
-                await queryClient.invalidateQueries({ queryKey: ['transactions'] });
-                await queryClient.invalidateQueries({ queryKey: ['budgets'] });
-                await queryClient.invalidateQueries({ queryKey: ['financial-goals'] });
+                // Invalidate and refetch all relevant queries
+                await Promise.all([
+                  queryClient.invalidateQueries({ queryKey: ['transactions'] }),
+                  queryClient.invalidateQueries({ queryKey: ['budgets'] }),
+                  queryClient.invalidateQueries({ queryKey: ['financial-goals'] }),
+                  queryClient.invalidateQueries({ queryKey: ['import-history'] })
+                ]);
 
                 const validCount = validatedTransactions.filter(t => t.isValid).length;
                 const invalidCount = validatedTransactions.length - validCount;
@@ -68,6 +80,9 @@ const ImportCSV = () => {
                   title: "Import successful",
                   description: `${validCount} valid transactions imported${invalidCount > 0 ? `, ${invalidCount} invalid transactions skipped` : ''}`,
                 });
+
+                // Clear transactions after successful import
+                setTransactions([]);
 
                 if (invalidCount > 0) {
                   setError(`${invalidCount} transactions were invalid. Please review the highlighted rows.`);
@@ -144,7 +159,7 @@ const ImportCSV = () => {
             transactions={transactions}
             importSession={null}
             isLoading={isProcessing}
-            onImport={() => {}}
+            onImport={handleImport}
             onCancel={() => setTransactions([])}
           />
         </CardContent>
