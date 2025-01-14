@@ -13,6 +13,7 @@ import Papa from "papaparse";
 import { validateTransaction } from "./utils/validateTransaction";
 import { TransactionTable } from "./TransactionTable";
 import { ImportForm } from "./ImportForm";
+import ImportHistory from "./ImportHistory";
 
 const ImportCSV = () => {
   const { toast } = useToast();
@@ -119,6 +120,8 @@ const ImportCSV = () => {
           </CardContent>
         </Card>
       )}
+
+      <ImportHistory />
     </div>
   );
 };
