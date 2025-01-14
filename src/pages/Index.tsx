@@ -30,18 +30,18 @@ const Index = () => {
     return content;
   };
 
-  // Calculate totals
+  // Calculate totals with proper string handling
   const totalIncome = transactions
     ? transactions
-        .filter(t => parseFloat(t.amount) > 0)
-        .reduce((sum, t) => sum + parseFloat(t.amount), 0)
+        .filter(t => t.amount > "0")
+        .reduce((sum, t) => sum + Number(t.amount), 0)
     : 0;
 
   const totalExpenses = transactions
     ? Math.abs(
         transactions
-          .filter(t => parseFloat(t.amount) < 0)
-          .reduce((sum, t) => sum + parseFloat(t.amount), 0)
+          .filter(t => t.amount < "0")
+          .reduce((sum, t) => sum + Number(t.amount), 0)
       )
     : 0;
 
@@ -127,8 +127,8 @@ const Index = () => {
                   {transactions.slice(0, 5).map((transaction) => (
                     <div key={transaction.id} className="flex justify-between items-center">
                       <span>{transaction.description}</span>
-                      <span className={transaction.amount >= 0 ? "text-green-600" : "text-red-600"}>
-                        ${Math.abs(parseFloat(transaction.amount)).toFixed(2)}
+                      <span className={Number(transaction.amount) >= 0 ? "text-green-600" : "text-red-600"}>
+                        ${Math.abs(Number(transaction.amount)).toFixed(2)}
                       </span>
                     </div>
                   ))}
