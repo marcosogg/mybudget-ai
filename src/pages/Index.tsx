@@ -30,17 +30,17 @@ const Index = () => {
     return content;
   };
 
-  // Calculate totals with proper string handling
+  // Calculate totals with proper number handling
   const totalIncome = transactions
     ? transactions
-        .filter(t => t.amount > "0")
+        .filter(t => Number(t.amount) > 0)
         .reduce((sum, t) => sum + Number(t.amount), 0)
     : 0;
 
   const totalExpenses = transactions
     ? Math.abs(
         transactions
-          .filter(t => t.amount < "0")
+          .filter(t => Number(t.amount) < 0)
           .reduce((sum, t) => sum + Number(t.amount), 0)
       )
     : 0;
