@@ -301,7 +301,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      import_revolut_transactions: {
+        Args: {
+          p_transactions: Json[]
+          p_month: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never

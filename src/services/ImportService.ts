@@ -12,65 +12,26 @@ export class ImportService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("User not authenticated");
 
-    // Start by creating an import session
-    const { data: importSession, error: sessionError } = await supabase
-      .from('import_sessions')
-      .insert({
-        user_id: user.id,
-        month: month,
-        transaction_count: transactions.length,
-        valid_transaction_count: transactions.filter(t => t.isValid).length,
-        status: 'completed'
-      })
-      .select()
-      .single();
+    // Call the database function with the month string (YYYY-MM format)
+    const { data, error } = await supabase
+      .rpc('import_revolut_transactions', {
+        p_transactions: transactions,
+        p_month: month,
+        p_user_id: user.id
+      });
 
-    if (sessionError || !importSession) {
-      console.error("Error creating import session:", sessionError);
+    if (error) {
+      console.error("Error importing transactions:", error);
       return {
         success: false,
-        message: "Failed to create import session"
-      };
-    }
-
-    // Prepare transactions for database insertion
-    const dbTransactions = transactions.map(t => ({
-      user_id: user.id,
-      amount: parseFloat(t.amount),
-      category: t.category || 'Other',
-      description: t.description,
-      date: t.date,
-      type: parseFloat(t.amount) >= 0 ? 'income' : 'expense',
-      import_session_id: importSession.id,
-      original_description: t.description,
-      is_valid: t.isValid,
-      invalid_reason: t.invalidReason
-    }));
-
-    // Insert all transactions
-    const { error: transactionError } = await supabase
-      .from('transactions')
-      .insert(dbTransactions);
-
-    if (transactionError) {
-      console.error("Error saving transactions:", transactionError);
-      
-      // Update import session status to failed
-      await supabase
-        .from('import_sessions')
-        .update({ status: 'failed' })
-        .eq('id', importSession.id);
-
-      return {
-        success: false,
-        message: "Failed to save transactions"
+        message: "Failed to import transactions"
       };
     }
 
     return {
       success: true,
       message: `Successfully imported ${transactions.length} transactions`,
-      importSessionId: importSession.id
+      importSessionId: data.import_session_id
     };
   }
 
