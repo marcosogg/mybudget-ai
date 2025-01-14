@@ -25,15 +25,23 @@ export class ImportService {
     }
 
     // Convert transactions to plain objects that match the Json type
-    const plainTransactions = transactions.map(t => ({
-      amount: t.amount,
-      category: t.category || 'Other',
-      description: t.description,
-      date: t.date,
-      is_valid: t.isValid,
-      invalid_reason: t.invalidReason,
-      original_description: t.original_description
-    }));
+    const plainTransactions = transactions.map(t => {
+      // Ensure date is in YYYY-MM-DD format
+      const date = new Date(t.date);
+      if (isNaN(date.getTime())) {
+        throw new Error(`Invalid date format for transaction: ${t.description}`);
+      }
+      
+      return {
+        amount: t.amount,
+        category: t.category || 'Other',
+        description: t.description,
+        date: date.toISOString().split('T')[0], // Format as YYYY-MM-DD
+        is_valid: t.isValid,
+        invalid_reason: t.invalidReason,
+        original_description: t.original_description
+      };
+    });
 
     // Call the database function with the month string (YYYY-MM format)
     const { data, error } = await supabase
