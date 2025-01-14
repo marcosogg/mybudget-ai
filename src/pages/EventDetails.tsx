@@ -63,7 +63,7 @@ export default function EventDetails() {
   } = useQuery({
     queryKey: ["event", id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: eventData, error: eventError } = await supabase
         .from("events")
         .select(
           `
@@ -72,21 +72,23 @@ export default function EventDetails() {
           description,
           start_time,
           end_time,
-          creator:profiles(username)
+          creator:creator_id (
+            username
+          )
         `
         )
         .eq("id", id)
         .single();
 
-      if (error) {
-        console.error("Error fetching event:", error);
-        throw error;
+      if (eventError) {
+        console.error("Error fetching event:", eventError);
+        throw eventError;
       }
 
       return {
-        ...data,
+        ...eventData,
         creator: {
-          username: data.creator?.username || "Unknown User",
+          username: eventData.creator?.username || "Unknown User",
         },
       } as EventDetails;
     },
@@ -100,22 +102,24 @@ export default function EventDetails() {
   } = useQuery({
     queryKey: ["event-attendees", id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: attendeesData, error: attendeesError } = await supabase
         .from("event_attendees")
         .select(
           `
-          user:profiles(username),
-          status
+          status,
+          user:user_id (
+            username
+          )
         `
         )
         .eq("event_id", id);
 
-      if (error) {
-        console.error("Error fetching attendees:", error);
-        throw error;
+      if (attendeesError) {
+        console.error("Error fetching attendees:", attendeesError);
+        throw attendeesError;
       }
 
-      return data.map((attendee) => ({
+      return (attendeesData || []).map((attendee) => ({
         user: {
           username: attendee.user?.username || "Unknown User",
         },
