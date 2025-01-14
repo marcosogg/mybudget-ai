@@ -24,8 +24,19 @@ export class ImportService {
       throw new Error("Month must be in YYYY-MM format");
     }
 
+    // Filter out invalid transactions
+    const validTransactions = transactions.filter(t => t.isValid);
+    
+    if (validTransactions.length === 0) {
+      throw new Error("No valid transactions to import");
+    }
+
     // Convert transactions to plain objects that match the Json type
-    const plainTransactions = transactions.map(t => {
+    const plainTransactions = validTransactions.map(t => {
+      if (!t.date || t.date.trim() === "") {
+        throw new Error("Invalid date: date cannot be empty");
+      }
+
       return {
         amount: parseFloat(t.amount.replace(/[^-0-9.]/g, '')),
         category: t.category || 'Other',
