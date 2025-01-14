@@ -56,7 +56,7 @@ const Tasks = () => {
           description,
           due_date,
           status,
-          assignee:profiles!tasks_assignee_id_fkey (
+          assignee:profiles!inner(
             id,
             username
           )
@@ -75,7 +75,15 @@ const Tasks = () => {
       const { data, error } = await query;
 
       if (error) throw error;
-      return data as TaskWithProfile[];
+      
+      // Transform the data to match TaskWithProfile type
+      return (data as any[]).map(task => ({
+        ...task,
+        assignee: task.assignee ? {
+          id: task.assignee.id,
+          username: task.assignee.username
+        } : null
+      })) as TaskWithProfile[];
     },
   });
 
