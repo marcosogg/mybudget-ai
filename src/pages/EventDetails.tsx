@@ -55,7 +55,7 @@ export default function EventDetails() {
           description,
           start_time,
           end_time,
-          creator:profiles!events_creator_id_fkey(username)
+          profiles!events_creator_id_fkey (username)
         `
         )
         .eq("id", id)
@@ -69,7 +69,7 @@ export default function EventDetails() {
       return {
         ...eventData,
         creator: {
-          username: eventData.creator?.username || "Unknown User",
+          username: eventData.profiles?.username || "Unknown User",
         },
       } as EventDetails;
     },
@@ -87,7 +87,7 @@ export default function EventDetails() {
         .select(
           `
           status,
-          user:profiles!event_attendees_user_id_fkey(username)
+          profiles!event_attendees_user_id_fkey (username)
         `
         )
         .eq("event_id", id);
@@ -99,7 +99,7 @@ export default function EventDetails() {
 
       return (attendeesData || []).map((attendee) => ({
         user: {
-          username: attendee.user?.username || "Unknown User",
+          username: attendee.profiles?.username || "Unknown User",
         },
         status: attendee.status,
       })) as Attendee[];
