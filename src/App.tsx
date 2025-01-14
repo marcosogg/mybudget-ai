@@ -6,6 +6,7 @@ import Tasks from "@/pages/Tasks";
 import TaskDetails from "@/pages/TaskDetails";
 import CreateEvent from "@/pages/CreateEvent";
 import Events from "@/pages/Events";
+import EventDetails from "@/pages/EventDetails";
 
 import "./App.css";
 
@@ -20,6 +21,7 @@ function App() {
         <Route path="/tasks/:id" element={<TaskDetails />} />
         <Route path="/events" element={<Events />} />
         <Route path="/events/create" element={<CreateEvent />} />
+        <Route path="/events/:id" element={<EventDetails />} />
       </Routes>
     </Router>
   );
