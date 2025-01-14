@@ -3,20 +3,30 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { importService } from "@/services/ImportService";
 import { Label } from "@/components/ui/label";
+import { Transaction } from "./types";
 
 interface ImportFormProps {
+  transactions?: Transaction[];
+  importSession?: any | null;
+  isLoading?: boolean;
   onImport: (file: File, selectedMonth: string) => Promise<void>;
   onClose?: () => void;
+  onCancel?: () => void;
 }
 
-export const ImportForm = ({ onImport, onClose }: ImportFormProps) => {
+export const ImportForm = ({ 
+  transactions = [], 
+  importSession = null, 
+  isLoading = false,
+  onImport, 
+  onClose,
+  onCancel 
+}: ImportFormProps) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedMonth, setSelectedMonth] = useState(
     new Date().toISOString().split("T")[0].substring(0, 7)
   );
-  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -42,7 +52,6 @@ export const ImportForm = ({ onImport, onClose }: ImportFormProps) => {
       return;
     }
 
-    setIsLoading(true);
     try {
       await onImport(selectedFile, selectedMonth);
       // Invalidate relevant queries after successful import
@@ -63,8 +72,6 @@ export const ImportForm = ({ onImport, onClose }: ImportFormProps) => {
         description: error instanceof Error ? error.message : "Failed to import transactions",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -91,8 +98,13 @@ export const ImportForm = ({ onImport, onClose }: ImportFormProps) => {
         />
       </div>
       <div className="flex justify-end gap-2">
-        {onClose && (
-          <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
+        {(onClose || onCancel) && (
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={onCancel || onClose} 
+            disabled={isLoading}
+          >
             Cancel
           </Button>
         )}
