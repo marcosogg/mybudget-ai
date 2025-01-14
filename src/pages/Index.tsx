@@ -30,6 +30,21 @@ const Index = () => {
     return content;
   };
 
+  // Calculate totals
+  const totalIncome = transactions
+    ? transactions
+        .filter(t => parseFloat(t.amount) > 0)
+        .reduce((sum, t) => sum + parseFloat(t.amount), 0)
+    : 0;
+
+  const totalExpenses = transactions
+    ? Math.abs(
+        transactions
+          .filter(t => parseFloat(t.amount) < 0)
+          .reduce((sum, t) => sum + parseFloat(t.amount), 0)
+      )
+    : 0;
+
   return (
     <div className="min-h-screen p-8 bg-background">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -53,15 +68,9 @@ const Index = () => {
                 transactionsLoading,
                 transactions?.length ? (
                   <div className="space-y-2">
-                    <p>Total Transactions: {transactions.length}</p>
-                    <p>Total Income: ${transactions
-                      .filter(t => parseFloat(t.amount) > 0)
-                      .reduce((sum, t) => sum + parseFloat(t.amount), 0)
-                      .toFixed(2)}</p>
-                    <p>Total Expenses: ${Math.abs(transactions
-                      .filter(t => parseFloat(t.amount) < 0)
-                      .reduce((sum, t) => sum + parseFloat(t.amount), 0))
-                      .toFixed(2)}</p>
+                    <p>Total Transactions: {transactions.length.toString()}</p>
+                    <p>Total Income: ${totalIncome.toFixed(2)}</p>
+                    <p>Total Expenses: ${totalExpenses.toFixed(2)}</p>
                   </div>
                 ) : (
                   <p className="text-muted-foreground">No transactions yet</p>
@@ -119,7 +128,7 @@ const Index = () => {
                     <div key={transaction.id} className="flex justify-between items-center">
                       <span>{transaction.description}</span>
                       <span className={transaction.amount >= 0 ? "text-green-600" : "text-red-600"}>
-                        ${Math.abs(transaction.amount).toFixed(2)}
+                        ${Math.abs(parseFloat(transaction.amount)).toFixed(2)}
                       </span>
                     </div>
                   ))}
