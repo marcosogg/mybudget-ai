@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { Transaction } from "@/components/revolut-import/types";
+import { Transaction, ImportSession } from "@/components/revolut-import/types";
 
 interface ImportResult {
   success: boolean;
@@ -74,7 +74,7 @@ export class ImportService {
     };
   }
 
-  async getImportHistory() {
+  async getImportHistory(): Promise<ImportSession[]> {
     const { data, error } = await supabase
       .from('import_sessions')
       .select('*')
@@ -85,25 +85,31 @@ export class ImportService {
       throw new Error("Failed to fetch import history");
     }
 
-    return data;
+    return data || [];
   }
 
-  async undoImport(importSessionId: string) {
-    const { error } = await supabase
+  async undoImport(importSessionId: string): Promise<void> {
+    // First delete all transactions associated with this import
+    const { error: transactionError } = await supabase
       .from('transactions')
       .delete()
       .match({ import_session_id: importSessionId });
 
-    if (error) {
-      console.error("Error undoing import:", error);
-      throw new Error("Failed to undo import");
+    if (transactionError) {
+      console.error("Error deleting transactions:", transactionError);
+      throw new Error("Failed to delete transactions");
     }
 
-    // Also delete the import session
-    await supabase
+    // Then delete the import session
+    const { error: sessionError } = await supabase
       .from('import_sessions')
       .delete()
       .match({ id: importSessionId });
+
+    if (sessionError) {
+      console.error("Error deleting import session:", sessionError);
+      throw new Error("Failed to delete import session");
+    }
   }
 }
 
