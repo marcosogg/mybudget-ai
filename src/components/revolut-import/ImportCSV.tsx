@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Transaction } from "./types";
 import { importService } from "@/services/ImportService";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import {
   Card,
   CardContent,
@@ -9,6 +9,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 import Papa from "papaparse";
 import { validateTransaction } from "./utils/validateTransaction";
 import { TransactionTable } from "./TransactionTable";
@@ -19,46 +21,70 @@ const ImportCSV = () => {
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   const handleImport = async (file: File, selectedMonth: string) => {
     setIsProcessing(true);
+    setError(null);
 
     try {
+      // Validate file size (10MB limit)
+      if (file.size > 10 * 1024 * 1024) {
+        throw new Error("File size exceeds 10MB limit");
+      }
+
       Papa.parse(file, {
         complete: async (results) => {
-          const validatedTransactions = results.data
-            .filter((row: any) => Object.keys(row).length > 1)
-            .map((row: any) => validateTransaction(row));
-
-          setTransactions(validatedTransactions);
-          
           try {
-            const result = await importService.saveTransactions(validatedTransactions, selectedMonth);
+            if (results.errors.length > 0) {
+              throw new Error(`CSV parsing error: ${results.errors[0].message}`);
+            }
+
+            const validatedTransactions = results.data
+              .filter((row: any) => Object.keys(row).length > 1)
+              .map((row: any) => validateTransaction(row));
+
+            // Check if we have any transactions to process
+            if (validatedTransactions.length === 0) {
+              throw new Error("No valid transactions found in the file");
+            }
+
+            setTransactions(validatedTransactions);
             
-            if (result.success) {
-              const validCount = validatedTransactions.filter(t => t.isValid).length;
-              toast({
-                title: "Import successful",
-                description: `${validCount} valid transactions imported out of ${validatedTransactions.length} total`,
-              });
-            } else {
-              toast({
-                variant: "destructive",
-                title: "Import failed",
-                description: result.message,
-              });
+            try {
+              const result = await importService.saveTransactions(validatedTransactions, selectedMonth);
+              
+              if (result.success) {
+                const validCount = validatedTransactions.filter(t => t.isValid).length;
+                const invalidCount = validatedTransactions.length - validCount;
+                
+                toast({
+                  title: "Import successful",
+                  description: `${validCount} valid transactions imported${invalidCount > 0 ? `, ${invalidCount} invalid transactions skipped` : ''}`,
+                });
+
+                if (invalidCount > 0) {
+                  setError(`${invalidCount} transactions were invalid. Please review the highlighted rows.`);
+                }
+              } else {
+                throw new Error(result.message || "Failed to save transactions");
+              }
+            } catch (error) {
+              console.error("Import error:", error);
+              throw new Error("Failed to save transactions. Please try again.");
             }
           } catch (error) {
-            console.error("Import error:", error);
+            setError(error instanceof Error ? error.message : "An unexpected error occurred");
             toast({
               variant: "destructive",
               title: "Import failed",
-              description: "Failed to save transactions. Please try again.",
+              description: error instanceof Error ? error.message : "An unexpected error occurred",
             });
           }
         },
         error: (error) => {
           console.error("Parsing error:", error);
+          setError(`Failed to parse CSV file: ${error.message}`);
           toast({
             variant: "destructive",
             title: "Error processing file",
@@ -70,10 +96,11 @@ const ImportCSV = () => {
       });
     } catch (error) {
       console.error("Import error:", error);
+      setError(error instanceof Error ? error.message : "An unexpected error occurred");
       toast({
         variant: "destructive",
         title: "Error importing file",
-        description: "An unexpected error occurred",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
       });
     } finally {
       setIsProcessing(false);
@@ -100,6 +127,13 @@ const ImportCSV = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
           <ImportForm onImport={handleImport} isProcessing={isProcessing} />
         </CardContent>
       </Card>

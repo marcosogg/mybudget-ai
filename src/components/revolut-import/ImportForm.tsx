@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -8,7 +8,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Upload, XCircle } from "lucide-react";
+import { Upload, XCircle, Loader2 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface ImportFormProps {
   onImport: (file: File, month: string) => void;
@@ -22,16 +23,31 @@ export const ImportForm = ({ onImport, isProcessing }: ImportFormProps) => {
   const [selectedMonth, setSelectedMonth] = useState<string>(
     new Date().toISOString().slice(0, 7)
   );
+  const [fileError, setFileError] = useState<string | null>(null);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
+    setFileError(null);
+
     if (!file) return;
 
     if (!file.name.endsWith(".csv")) {
+      setFileError("Please select a CSV file");
       toast({
         variant: "destructive",
         title: "Invalid file type",
         description: "Please select a CSV file",
+      });
+      return;
+    }
+
+    // Check file size (10MB limit)
+    if (file.size > 10 * 1024 * 1024) {
+      setFileError("File size exceeds 10MB limit");
+      toast({
+        variant: "destructive",
+        title: "File too large",
+        description: "Please select a file smaller than 10MB",
       });
       return;
     }
@@ -41,13 +57,17 @@ export const ImportForm = ({ onImport, isProcessing }: ImportFormProps) => {
 
   const clearSelection = () => {
     setSelectedFile(null);
+    setFileError(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
 
   const handleImport = () => {
-    if (!selectedFile) return;
+    if (!selectedFile) {
+      setFileError("Please select a file");
+      return;
+    }
     onImport(selectedFile, selectedMonth + "-01");
   };
 
@@ -59,10 +79,14 @@ export const ImportForm = ({ onImport, isProcessing }: ImportFormProps) => {
   });
 
   return (
-    <>
+    <div className="space-y-4">
       <div className="space-y-2">
         <label className="text-sm font-medium">Select Month</label>
-        <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+        <Select 
+          value={selectedMonth} 
+          onValueChange={setSelectedMonth}
+          disabled={isProcessing}
+        >
           <SelectTrigger>
             <SelectValue placeholder="Select month" />
           </SelectTrigger>
@@ -88,16 +112,18 @@ export const ImportForm = ({ onImport, isProcessing }: ImportFormProps) => {
             onChange={handleFileSelect}
             ref={fileInputRef}
             className="hidden"
+            disabled={isProcessing}
           />
           <Button
             variant="outline"
             onClick={() => fileInputRef.current?.click()}
             className="flex-1"
+            disabled={isProcessing}
           >
             <Upload className="w-4 h-4 mr-2" />
             {selectedFile ? selectedFile.name : "Choose file"}
           </Button>
-          {selectedFile && (
+          {selectedFile && !isProcessing && (
             <Button
               variant="ghost"
               size="icon"
@@ -108,6 +134,11 @@ export const ImportForm = ({ onImport, isProcessing }: ImportFormProps) => {
             </Button>
           )}
         </div>
+        {fileError && (
+          <Alert variant="destructive" className="mt-2">
+            <AlertDescription>{fileError}</AlertDescription>
+          </Alert>
+        )}
       </div>
 
       <Button
@@ -115,8 +146,15 @@ export const ImportForm = ({ onImport, isProcessing }: ImportFormProps) => {
         disabled={!selectedFile || isProcessing}
         className="w-full"
       >
-        {isProcessing ? "Processing..." : "Import Transactions"}
+        {isProcessing ? (
+          <>
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            Processing...
+          </>
+        ) : (
+          "Import Transactions"
+        )}
       </Button>
-    </>
+    </div>
   );
 };
