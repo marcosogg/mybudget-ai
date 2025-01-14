@@ -1,7 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCurrentMonthTransactions, useCurrentMonthBudgets } from "@/hooks/use-dashboard-queries";
 import { Skeleton } from "@/components/ui/skeleton";
-import { DollarSign, AlertCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
+import { BudgetDialog } from "./BudgetDialog";
 
 export const BudgetStatusCard = () => {
   const { data: transactions, isLoading: transactionsLoading } = useCurrentMonthTransactions();
@@ -17,8 +18,9 @@ export const BudgetStatusCard = () => {
   if (transactionsLoading || budgetsLoading) {
     return (
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle>Budget Status</CardTitle>
+          <BudgetDialog />
         </CardHeader>
         <CardContent>
           <Skeleton className="h-24 w-full" />
@@ -30,8 +32,9 @@ export const BudgetStatusCard = () => {
   if (!budgets?.length) {
     return (
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle>Budget Status</CardTitle>
+          <BudgetDialog />
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-2 text-muted-foreground">
@@ -45,8 +48,9 @@ export const BudgetStatusCard = () => {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle>Budget Status</CardTitle>
+        <BudgetDialog />
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
