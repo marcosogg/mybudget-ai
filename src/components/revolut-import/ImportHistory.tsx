@@ -21,13 +21,16 @@ import { format } from "date-fns";
 import { History, Undo2, XCircle, CheckCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
+type ImportStatus = 'completed' | 'failed';
+
 interface ImportSession {
   id: string;
   created_at: string;
   month: string;
   transaction_count: number;
   valid_transaction_count: number;
-  status: 'completed' | 'failed';
+  status: ImportStatus;
+  user_id: string;
 }
 
 const ImportHistory = () => {
@@ -35,7 +38,13 @@ const ImportHistory = () => {
 
   const { data: importHistory, isLoading, error } = useQuery({
     queryKey: ['importHistory'],
-    queryFn: importService.getImportHistory,
+    queryFn: async () => {
+      const data = await importService.getImportHistory();
+      return data.map(session => ({
+        ...session,
+        status: session.status as ImportStatus
+      }));
+    },
   });
 
   const handleUndo = async (importId: string) => {
