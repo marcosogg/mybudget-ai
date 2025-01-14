@@ -7,15 +7,33 @@ interface ImportResult {
   importSessionId?: string;
 }
 
+interface ImportRPCResponse {
+  success: boolean;
+  import_session_id: string;
+  total_count: number;
+  valid_count: number;
+}
+
 export class ImportService {
   async saveTransactions(transactions: Transaction[], month: string): Promise<ImportResult> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("User not authenticated");
 
+    // Convert transactions to plain objects that match the Json type
+    const plainTransactions = transactions.map(t => ({
+      amount: t.amount,
+      category: t.category || 'Other',
+      description: t.description,
+      date: t.date,
+      is_valid: t.isValid,
+      invalid_reason: t.invalidReason,
+      original_description: t.original_description
+    }));
+
     // Call the database function with the month string (YYYY-MM format)
     const { data, error } = await supabase
       .rpc('import_revolut_transactions', {
-        p_transactions: transactions,
+        p_transactions: plainTransactions,
         p_month: month,
         p_user_id: user.id
       });
@@ -28,10 +46,12 @@ export class ImportService {
       };
     }
 
+    const response = data as ImportRPCResponse;
+
     return {
       success: true,
       message: `Successfully imported ${transactions.length} transactions`,
-      importSessionId: data.import_session_id
+      importSessionId: response.import_session_id
     };
   }
 
