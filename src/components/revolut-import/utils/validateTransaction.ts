@@ -1,4 +1,5 @@
 import { Transaction } from "../types";
+import { parse, isValid } from "date-fns";
 
 export const validateTransaction = (transaction: any): Transaction => {
   const result: Transaction = {
@@ -11,45 +12,24 @@ export const validateTransaction = (transaction: any): Transaction => {
     original_description: transaction.Description || ""
   };
 
-  // Validate and format date (use Completed Date from Revolut CSV)
+  // Validate and format date using date-fns
   if (!transaction["Completed Date"]) {
     result.isValid = false;
     result.invalidReason = "Missing completed date";
   } else {
     try {
-      // Parse DD/MM/YYYY HH:mm format
-      const [datePart] = transaction["Completed Date"].split(" ");
-      if (!datePart) {
+      const parsedDate = parse(
+        transaction["Completed Date"],
+        'dd/MM/yyyy HH:mm',
+        new Date()
+      );
+
+      if (!isValid(parsedDate)) {
         throw new Error("Invalid date format");
       }
 
-      const [day, month, year] = datePart.split("/");
-      
-      // Validate date parts exist and are numbers
-      if (!day || !month || !year || 
-          isNaN(Number(day)) || isNaN(Number(month)) || isNaN(Number(year))) {
-        throw new Error("Invalid date components");
-      }
-
-      // Validate ranges
-      const dayNum = parseInt(day, 10);
-      const monthNum = parseInt(month, 10);
-      const yearNum = parseInt(year, 10);
-
-      if (dayNum < 1 || dayNum > 31 || monthNum < 1 || monthNum > 12) {
-        throw new Error("Date values out of range");
-      }
-
-      // Convert to YYYY-MM-DD format
-      const formattedDate = `${yearNum}-${monthNum.toString().padStart(2, '0')}-${dayNum.toString().padStart(2, '0')}`;
-      
-      // Final validation using Date object
-      const dateObj = new Date(formattedDate);
-      if (isNaN(dateObj.getTime())) {
-        throw new Error("Invalid date");
-      }
-
-      result.date = formattedDate;
+      // Convert to YYYY-MM-DD format for database storage
+      result.date = parsedDate.toISOString().split('T')[0];
 
     } catch (error) {
       result.isValid = false;
