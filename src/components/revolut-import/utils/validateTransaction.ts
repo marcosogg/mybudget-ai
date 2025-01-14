@@ -18,23 +18,39 @@ export const validateTransaction = (transaction: any): Transaction => {
   } else {
     try {
       // Parse DD/MM/YYYY HH:mm format
-      const [datePart, timePart] = transaction["Completed Date"].split(" ");
-      const [day, month, year] = datePart.split("/");
-      
-      // Validate date parts
-      if (!day || !month || !year || 
-          isNaN(Number(day)) || isNaN(Number(month)) || isNaN(Number(year))) {
+      const [datePart] = transaction["Completed Date"].split(" ");
+      if (!datePart) {
         throw new Error("Invalid date format");
       }
 
-      // Convert to YYYY-MM-DD format (what PostgreSQL expects)
-      result.date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+      const [day, month, year] = datePart.split("/");
       
-      // Validate the date is real
-      const dateObj = new Date(result.date);
+      // Validate date parts exist and are numbers
+      if (!day || !month || !year || 
+          isNaN(Number(day)) || isNaN(Number(month)) || isNaN(Number(year))) {
+        throw new Error("Invalid date components");
+      }
+
+      // Validate ranges
+      const dayNum = parseInt(day, 10);
+      const monthNum = parseInt(month, 10);
+      const yearNum = parseInt(year, 10);
+
+      if (dayNum < 1 || dayNum > 31 || monthNum < 1 || monthNum > 12) {
+        throw new Error("Date values out of range");
+      }
+
+      // Convert to YYYY-MM-DD format
+      const formattedDate = `${yearNum}-${monthNum.toString().padStart(2, '0')}-${dayNum.toString().padStart(2, '0')}`;
+      
+      // Final validation using Date object
+      const dateObj = new Date(formattedDate);
       if (isNaN(dateObj.getTime())) {
         throw new Error("Invalid date");
       }
+
+      result.date = formattedDate;
+
     } catch (error) {
       result.isValid = false;
       result.invalidReason = "Invalid date format";
