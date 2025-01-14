@@ -35,6 +35,17 @@ interface Transaction {
   invalidReason?: string;
 }
 
+const CATEGORIES = [
+  "Food & Dining",
+  "Transportation",
+  "Shopping",
+  "Bills & Utilities",
+  "Entertainment",
+  "Health & Fitness",
+  "Travel",
+  "Other",
+] as const;
+
 const ImportCSV = () => {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -51,6 +62,7 @@ const ImportCSV = () => {
       date: transaction.Date || transaction.date || "",
       description: transaction.Description || transaction.description || "",
       amount: transaction.Amount || transaction.amount || "",
+      category: transaction.Category || transaction.category || "Other",
       isValid: true,
     };
 
@@ -103,7 +115,7 @@ const ImportCSV = () => {
       Papa.parse(selectedFile, {
         complete: (results) => {
           const validatedTransactions = results.data
-            .filter((row: any) => Object.keys(row).length > 1) // Filter out empty rows
+            .filter((row: any) => Object.keys(row).length > 1)
             .map((row: any) => validateTransaction(row));
 
           setTransactions(validatedTransactions);
@@ -136,6 +148,16 @@ const ImportCSV = () => {
       setIsProcessing(false);
       abortController.current = null;
     }
+  };
+
+  const handleCategoryChange = (transactionIndex: number, newCategory: string) => {
+    setTransactions(prev => 
+      prev.map((transaction, index) => 
+        index === transactionIndex 
+          ? { ...transaction, category: newCategory }
+          : transaction
+      )
+    );
   };
 
   const clearSelection = () => {
@@ -239,6 +261,7 @@ const ImportCSV = () => {
                     <TableHead>Date</TableHead>
                     <TableHead>Description</TableHead>
                     <TableHead>Amount</TableHead>
+                    <TableHead>Category</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -251,6 +274,24 @@ const ImportCSV = () => {
                       <TableCell>{transaction.date}</TableCell>
                       <TableCell>{transaction.description}</TableCell>
                       <TableCell>{transaction.amount}</TableCell>
+                      <TableCell>
+                        <Select
+                          value={transaction.category}
+                          onValueChange={(value) => handleCategoryChange(index, value)}
+                          disabled={!transaction.isValid}
+                        >
+                          <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder="Select category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {CATEGORIES.map((category) => (
+                              <SelectItem key={category} value={category}>
+                                {category}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
                       <TableCell>
                         {transaction.isValid ? (
                           <span className="text-green-600">Valid</span>
