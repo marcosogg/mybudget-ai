@@ -3,6 +3,7 @@ import Index from "@/pages/Index";
 import Auth from "@/pages/Auth";
 import CreateTask from "@/pages/CreateTask";
 import Tasks from "@/pages/Tasks";
+import TaskDetails from "@/pages/TaskDetails";
 
 import "./App.css";
 
@@ -14,6 +15,7 @@ function App() {
         <Route path="/auth" element={<Auth />} />
         <Route path="/tasks" element={<Tasks />} />
         <Route path="/tasks/create" element={<CreateTask />} />
+        <Route path="/tasks/:id" element={<TaskDetails />} />
       </Routes>
     </Router>
   );
