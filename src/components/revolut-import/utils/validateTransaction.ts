@@ -1,5 +1,5 @@
 import { Transaction } from "../types";
-import { format } from "date-fns";
+import { parse, isValid, format } from "date-fns";
 
 export const validateTransaction = (transaction: any): Transaction => {
   const result: Transaction = {
@@ -12,28 +12,32 @@ export const validateTransaction = (transaction: any): Transaction => {
     original_description: transaction.Description || ""
   };
 
-  // Validate and format date using simple string manipulation
+  // Validate and format date using date-fns
   if (!transaction["Completed Date"]) {
     result.isValid = false;
     result.invalidReason = "Missing completed date";
   } else {
     try {
       const dateStr = transaction["Completed Date"];
-      const [datePart, timePart] = dateStr.split(' ');
-      const [day, month, year] = datePart.split('/');
-      const date = new Date(`${year}-${month}-${day}T${timePart}`);
+      // First try with seconds
+      let parsedDate = parse(dateStr, 'dd/MM/yyyy HH:mm:ss', new Date());
       
-      if (isNaN(date.getTime())) {
+      // If that fails, try without seconds
+      if (!isValid(parsedDate)) {
+        parsedDate = parse(dateStr, 'dd/MM/yyyy HH:mm', new Date());
+      }
+      
+      if (!isValid(parsedDate)) {
         throw new Error("Invalid date");
       }
-
+      
       // Convert to YYYY-MM-DD format for database storage
-      result.date = format(date, 'yyyy-MM-dd');
+      result.date = format(parsedDate, 'yyyy-MM-dd');
 
     } catch (error) {
       result.isValid = false;
       result.invalidReason = "Invalid date format";
-      console.error("Date parsing error:", error);
+      console.error("Date parsing error:", error, "for date:", transaction["Completed Date"]);
     }
   }
 
