@@ -2,62 +2,80 @@ import { Transaction } from "../types";
 
 export const validateTransaction = (transaction: any): Transaction => {
   const result: Transaction = {
-    date: transaction.Date || transaction.date || "",
-    description: transaction.Description || transaction.description || "",
-    amount: transaction.Amount || transaction.amount || "",
-    category: transaction.Category || transaction.category || "Other",
-    type: transaction.Type || transaction.type || "expense",
+    date: "",
+    description: transaction.Description || "",
+    amount: transaction.Amount?.toString() || "",
+    category: transaction.Category || "Other",
+    type: transaction.Type || "expense",
     isValid: true,
-    original_description: transaction.Description || transaction.description || ""
+    original_description: transaction.Description || ""
   };
 
-  // Validate date - handle different date formats
-  if (!result.date || result.date.trim() === "") {
+  // Validate and format date (use Completed Date from Revolut CSV)
+  if (!transaction["Completed Date"]) {
     result.isValid = false;
-    result.invalidReason = "Missing date";
+    result.invalidReason = "Missing completed date";
   } else {
     try {
-      // Try to parse the date - Revolut uses DD/MM/YYYY format
-      const dateParts = result.date.split('/');
-      if (dateParts.length === 3) {
-        // Convert DD/MM/YYYY to YYYY-MM-DD
-        const [day, month, year] = dateParts;
-        result.date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-      } else {
-        // Try parsing as ISO date (YYYY-MM-DD)
-        const isoDate = new Date(result.date);
-        if (isNaN(isoDate.getTime())) {
-          throw new Error("Invalid date format");
-        }
-        result.date = isoDate.toISOString().split('T')[0];
+      // Parse DD/MM/YYYY HH:mm format
+      const [datePart, timePart] = transaction["Completed Date"].split(" ");
+      const [day, month, year] = datePart.split("/");
+      
+      // Validate date parts
+      if (!day || !month || !year || 
+          isNaN(Number(day)) || isNaN(Number(month)) || isNaN(Number(year))) {
+        throw new Error("Invalid date format");
+      }
+
+      // Convert to YYYY-MM-DD format (what PostgreSQL expects)
+      result.date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+      
+      // Validate the date is real
+      const dateObj = new Date(result.date);
+      if (isNaN(dateObj.getTime())) {
+        throw new Error("Invalid date");
       }
     } catch (error) {
       result.isValid = false;
       result.invalidReason = "Invalid date format";
+      console.error("Date parsing error:", error);
     }
   }
 
   // Validate amount
-  if (!result.amount || result.amount.trim() === "") {
+  if (!transaction.Amount || transaction.Amount.toString().trim() === "") {
     result.isValid = false;
     result.invalidReason = "Missing amount";
   } else {
-    const amount = parseFloat(result.amount.replace(/[^-0-9.]/g, ''));
-    if (isNaN(amount)) {
+    try {
+      const amount = parseFloat(transaction.Amount.toString().replace(/[^-0-9.]/g, ''));
+      if (isNaN(amount)) {
+        throw new Error("Invalid amount format");
+      }
+      result.amount = amount.toString();
+    } catch (error) {
       result.isValid = false;
       result.invalidReason = "Invalid amount format";
     }
   }
 
   // Validate description
-  if (!result.description || result.description.trim().length === 0) {
+  if (!transaction.Description || transaction.Description.trim().length === 0) {
     result.isValid = false;
     result.invalidReason = "Missing description";
   }
 
-  // Store original type from CSV
-  if (!result.type) {
-    result.type = parseFloat(result.amount) >= 0 ? "income" : "expense";
+  // Map Revolut transaction types
+  const typeMap: { [key: string]: string } = {
+    'CARD_PAYMENT': 'expense',
+    'TOPUP': 'income',
+    'TRANSFER': transaction.Amount && parseFloat(transaction.Amount) > 0 ? 'income' : 'expense'
+  };
+  result.type = typeMap[transaction.Type] || 'expense';
+
+  // Set category based on description or type
+  if (!result.category) {
+    result.category = 'Other';
   }
 
   return result;
