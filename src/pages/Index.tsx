@@ -6,6 +6,7 @@ import ImportCSV from "@/components/revolut-import/ImportCSV";
 import { useCurrentMonthTransactions, useFinancialGoals } from "@/hooks/use-dashboard-queries";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BudgetStatusCard } from "@/components/budget/BudgetStatusCard";
+import { FinancialGoalsCard } from "@/components/financial-goals/FinancialGoalsCard";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -80,22 +81,8 @@ const Index = () => {
           {/* Budget Status */}
           <BudgetStatusCard />
 
-          {/* Goals Progress */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Financial Goals</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {renderCardContent(
-                goalsLoading,
-                goals?.length ? (
-                  <p>Goals information loaded</p>
-                ) : (
-                  <p className="text-muted-foreground">Track your financial goals</p>
-                )
-              )}
-            </CardContent>
-          </Card>
+          {/* Financial Goals */}
+          <FinancialGoalsCard />
         </div>
 
         {/* Recent Transactions Section */}
