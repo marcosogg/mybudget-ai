@@ -11,10 +11,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import Papa from "papaparse";
 import { validateTransaction } from "./utils/validateTransaction";
-import { TransactionTable } from "./TransactionTable";
 import { ImportForm } from "./ImportForm";
 import ImportHistory from "./ImportHistory";
 
@@ -128,16 +127,6 @@ const ImportCSV = () => {
     }
   };
 
-  const handleCategoryChange = (transactionIndex: number, newCategory: string) => {
-    setTransactions(prev => 
-      prev.map((transaction, index) => 
-        index === transactionIndex 
-          ? { ...transaction, category: newCategory }
-          : transaction
-      )
-    );
-  };
-
   return (
     <div className="space-y-6">
       <Card className="w-full max-w-2xl mx-auto">
@@ -164,23 +153,6 @@ const ImportCSV = () => {
           />
         </CardContent>
       </Card>
-
-      {transactions.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Transaction Preview</CardTitle>
-            <CardDescription>
-              Review your transactions before importing
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <TransactionTable 
-              transactions={transactions}
-              onCategoryChange={handleCategoryChange}
-            />
-          </CardContent>
-        </Card>
-      )}
 
       <ImportHistory />
     </div>

@@ -13,7 +13,7 @@ interface ImportFormProps {
   transactions: Transaction[];
   importSession: ImportSession | null;
   isLoading: boolean;
-  onImport: () => void;
+  onImport: (file: File, selectedMonth: string) => Promise<void>;
   onCancel: () => void;
 }
 
@@ -27,11 +27,22 @@ export const ImportForm = ({
   const { toast } = useToast();
   const [isImporting, setIsImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState<string>("");
 
   const validTransactions = transactions.filter(t => t.isValid);
   const invalidTransactions = transactions.filter(t => !t.isValid);
 
   const handleImport = async () => {
+    if (!selectedFile || !selectedMonth) {
+      toast({
+        variant: "destructive",
+        title: "Missing required fields",
+        description: "Please select a file and month to import.",
+      });
+      return;
+    }
+
     try {
       setIsImporting(true);
       setError(null);
@@ -66,12 +77,12 @@ export const ImportForm = ({
 
       if (importError) throw importError;
 
+      await onImport(selectedFile, selectedMonth);
+
       toast({
         title: "Import Successful",
         description: `Successfully imported ${validTransactions.length} transactions.`,
       });
-
-      onImport();
     } catch (err) {
       console.error("Import error:", err);
       setError(err instanceof Error ? err.message : "Failed to import transactions");
