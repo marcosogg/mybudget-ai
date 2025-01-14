@@ -1,173 +1,105 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { TransactionTable } from "./TransactionTable";
-import { ImportSession, Transaction } from "./types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { importService } from "@/services/ImportService";
+import { Label } from "@/components/ui/label";
 
 interface ImportFormProps {
-  transactions: Transaction[];
-  importSession: ImportSession | null;
-  isLoading: boolean;
   onImport: (file: File, selectedMonth: string) => Promise<void>;
-  onCancel: () => void;
+  onClose?: () => void;
 }
 
-export const ImportForm = ({ 
-  transactions, 
-  importSession, 
-  isLoading, 
-  onImport, 
-  onCancel 
-}: ImportFormProps) => {
-  const { toast } = useToast();
-  const [isImporting, setIsImporting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+export const ImportForm = ({ onImport, onClose }: ImportFormProps) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [selectedMonth, setSelectedMonth] = useState<string>("");
+  const [selectedMonth, setSelectedMonth] = useState(
+    new Date().toISOString().split("T")[0].substring(0, 7)
+  );
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const validTransactions = transactions.filter(t => t.isValid);
-  const invalidTransactions = transactions.filter(t => !t.isValid);
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+    }
+  };
 
-  const handleImport = async () => {
+  const handleMonthChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSelectedMonth(event.target.value);
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     if (!selectedFile || !selectedMonth) {
       toast({
+        title: "Error",
+        description: "Please select a file and month",
         variant: "destructive",
-        title: "Missing required fields",
-        description: "Please select a file and month to import.",
       });
       return;
     }
 
+    setIsLoading(true);
     try {
-      setIsImporting(true);
-      setError(null);
-
-      if (invalidTransactions.length > 0) {
-        const proceed = window.confirm(
-          `There are ${invalidTransactions.length} invalid transactions. Do you want to proceed with importing only the valid transactions?`
-        );
-        if (!proceed) {
-          setIsImporting(false);
-          return;
-        }
-      }
-
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("User not authenticated");
-
-      const { error: importError } = await supabase
-        .from("transactions")
-        .insert(validTransactions.map(t => ({
-          amount: parseFloat(t.amount),
-          category: t.category || 'Other',
-          description: t.description,
-          date: t.date,
-          type: parseFloat(t.amount) >= 0 ? 'income' : 'expense',
-          original_description: t.description,
-          import_session_id: importSession?.id,
-          user_id: user.id,
-          is_valid: t.isValid,
-          invalid_reason: t.invalidReason
-        })));
-
-      if (importError) throw importError;
-
       await onImport(selectedFile, selectedMonth);
-
+      // Invalidate relevant queries after successful import
+      await queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      await queryClient.invalidateQueries({ queryKey: ["budgets"] });
+      
       toast({
-        title: "Import Successful",
-        description: `Successfully imported ${validTransactions.length} transactions.`,
+        title: "Success",
+        description: "Transactions imported successfully",
       });
-    } catch (err) {
-      console.error("Import error:", err);
-      setError(err instanceof Error ? err.message : "Failed to import transactions");
+      
+      if (onClose) {
+        onClose();
+      }
+    } catch (error) {
       toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to import transactions",
         variant: "destructive",
-        title: "Import Failed",
-        description: "There was an error importing your transactions. Please try again.",
       });
     } finally {
-      setIsImporting(false);
+      setIsLoading(false);
     }
   };
 
-  const handleCategoryChange = (index: number, category: string) => {
-    // This is a placeholder for category changes
-    console.log("Category changed:", index, category);
-  };
-
-  if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            <Skeleton className="h-8 w-3/4" />
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Skeleton className="h-48" />
-          <div className="flex justify-end space-x-2">
-            <Skeleton className="h-10 w-24" />
-            <Skeleton className="h-10 w-24" />
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Review Transactions</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {error && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-        
-        <div className="text-sm text-muted-foreground mb-4">
-          <p>Total Transactions: {transactions.length}</p>
-          <p>Valid Transactions: {validTransactions.length}</p>
-          {invalidTransactions.length > 0 && (
-            <p className="text-destructive">Invalid Transactions: {invalidTransactions.length}</p>
-          )}
-        </div>
-
-        <TransactionTable 
-          transactions={transactions} 
-          onCategoryChange={handleCategoryChange}
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="file">CSV File</Label>
+        <Input
+          id="file"
+          type="file"
+          accept=".csv"
+          onChange={handleFileChange}
+          disabled={isLoading}
         />
-
-        <div className="flex justify-end space-x-2">
-          <Button
-            variant="outline"
-            onClick={onCancel}
-            disabled={isImporting}
-          >
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="month">Month</Label>
+        <Input
+          id="month"
+          type="month"
+          value={selectedMonth}
+          onChange={handleMonthChange}
+          disabled={isLoading}
+        />
+      </div>
+      <div className="flex justify-end gap-2">
+        {onClose && (
+          <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
             Cancel
           </Button>
-          <Button
-            onClick={handleImport}
-            disabled={isImporting || validTransactions.length === 0}
-          >
-            {isImporting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Importing...
-              </>
-            ) : (
-              'Import Transactions'
-            )}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+        )}
+        <Button type="submit" disabled={!selectedFile || !selectedMonth || isLoading}>
+          {isLoading ? "Importing..." : "Import"}
+        </Button>
+      </div>
+    </form>
   );
 };
