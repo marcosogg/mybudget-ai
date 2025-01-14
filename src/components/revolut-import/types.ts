@@ -5,6 +5,18 @@ export interface Transaction {
   category?: string;
   isValid: boolean;
   invalidReason?: string;
+  type?: 'income' | 'expense';
+  original_description?: string;
+}
+
+export interface ImportSession {
+  id: string;
+  user_id: string;
+  month: string;
+  transaction_count: number;
+  valid_transaction_count: number;
+  status: 'completed' | 'failed';
+  created_at?: string;
 }
 
 export const CATEGORIES = [

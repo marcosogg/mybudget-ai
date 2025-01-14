@@ -17,6 +17,11 @@ import { TransactionTable } from "./TransactionTable";
 import { ImportForm } from "./ImportForm";
 import ImportHistory from "./ImportHistory";
 
+interface ImportFormProps {
+  onImport: (file: File, selectedMonth: string) => Promise<void>;
+  isProcessing: boolean;
+}
+
 const ImportCSV = () => {
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -134,7 +139,13 @@ const ImportCSV = () => {
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-          <ImportForm onImport={handleImport} isProcessing={isProcessing} />
+          <ImportForm 
+            transactions={transactions}
+            importSession={null}
+            isLoading={isProcessing}
+            onImport={() => {}}
+            onCancel={() => setTransactions([])}
+          />
         </CardContent>
       </Card>
 

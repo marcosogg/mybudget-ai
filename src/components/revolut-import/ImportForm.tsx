@@ -28,8 +28,8 @@ export const ImportForm = ({
   const [isImporting, setIsImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const validTransactions = transactions.filter(t => t.is_valid);
-  const invalidTransactions = transactions.filter(t => !t.is_valid);
+  const validTransactions = transactions.filter(t => t.isValid);
+  const invalidTransactions = transactions.filter(t => !t.isValid);
 
   const handleImport = async () => {
     try {
@@ -46,16 +46,22 @@ export const ImportForm = ({
         }
       }
 
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
+
       const { error: importError } = await supabase
         .from("transactions")
         .insert(validTransactions.map(t => ({
-          amount: t.amount,
-          category: t.category,
+          amount: parseFloat(t.amount),
+          category: t.category || 'Other',
           description: t.description,
           date: t.date,
-          type: t.type,
-          original_description: t.original_description,
-          import_session_id: importSession?.id
+          type: parseFloat(t.amount) >= 0 ? 'income' : 'expense',
+          original_description: t.description,
+          import_session_id: importSession?.id,
+          user_id: user.id,
+          is_valid: t.isValid,
+          invalid_reason: t.invalidReason
         })));
 
       if (importError) throw importError;
@@ -77,6 +83,11 @@ export const ImportForm = ({
     } finally {
       setIsImporting(false);
     }
+  };
+
+  const handleCategoryChange = (index: number, category: string) => {
+    // This is a placeholder for category changes
+    console.log("Category changed:", index, category);
   };
 
   if (isLoading) {
@@ -118,7 +129,10 @@ export const ImportForm = ({
           )}
         </div>
 
-        <TransactionTable transactions={transactions} />
+        <TransactionTable 
+          transactions={transactions} 
+          onCategoryChange={handleCategoryChange}
+        />
 
         <div className="flex justify-end space-x-2">
           <Button
