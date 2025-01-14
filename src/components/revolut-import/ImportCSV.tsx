@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Transaction } from "./types";
 import { importService } from "@/services/ImportService";
 import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Card,
   CardContent,
@@ -17,13 +18,9 @@ import { TransactionTable } from "./TransactionTable";
 import { ImportForm } from "./ImportForm";
 import ImportHistory from "./ImportHistory";
 
-interface ImportFormProps {
-  onImport: (file: File, selectedMonth: string) => Promise<void>;
-  isProcessing: boolean;
-}
-
 const ImportCSV = () => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isProcessing, setIsProcessing] = useState(false);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +46,6 @@ const ImportCSV = () => {
               .filter((row: any) => Object.keys(row).length > 1)
               .map((row: any) => validateTransaction(row));
 
-            // Check if we have any transactions to process
             if (validatedTransactions.length === 0) {
               throw new Error("No valid transactions found in the file");
             }
@@ -60,6 +56,11 @@ const ImportCSV = () => {
               const result = await importService.saveTransactions(validatedTransactions, selectedMonth);
               
               if (result.success) {
+                // Invalidate relevant queries after successful import
+                await queryClient.invalidateQueries({ queryKey: ['transactions'] });
+                await queryClient.invalidateQueries({ queryKey: ['budgets'] });
+                await queryClient.invalidateQueries({ queryKey: ['financial-goals'] });
+
                 const validCount = validatedTransactions.filter(t => t.isValid).length;
                 const invalidCount = validatedTransactions.length - validCount;
                 

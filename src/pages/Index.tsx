@@ -4,10 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import ImportCSV from "@/components/revolut-import/ImportCSV";
-import { Plus } from "lucide-react";
+import { useCurrentMonthTransactions, useCurrentMonthBudgets, useFinancialGoals } from "@/hooks/use-dashboard-queries";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Index = () => {
   const navigate = useNavigate();
+  const { data: transactions, isLoading: transactionsLoading } = useCurrentMonthTransactions();
+  const { data: budgets, isLoading: budgetsLoading } = useCurrentMonthBudgets();
+  const { data: goals, isLoading: goalsLoading } = useFinancialGoals();
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -18,6 +22,13 @@ const Index = () => {
 
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  const renderCardContent = (isLoading: boolean, content: React.ReactNode) => {
+    if (isLoading) {
+      return <Skeleton className="h-24 w-full" />;
+    }
+    return content;
+  };
 
   return (
     <div className="min-h-screen p-8 bg-background">
@@ -38,7 +49,24 @@ const Index = () => {
               <CardTitle>Current Month</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">No transactions yet</p>
+              {renderCardContent(
+                transactionsLoading,
+                transactions?.length ? (
+                  <div className="space-y-2">
+                    <p>Total Transactions: {transactions.length}</p>
+                    <p>Total Income: ${transactions
+                      .filter(t => parseFloat(t.amount) > 0)
+                      .reduce((sum, t) => sum + parseFloat(t.amount), 0)
+                      .toFixed(2)}</p>
+                    <p>Total Expenses: ${Math.abs(transactions
+                      .filter(t => parseFloat(t.amount) < 0)
+                      .reduce((sum, t) => sum + parseFloat(t.amount), 0))
+                      .toFixed(2)}</p>
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground">No transactions yet</p>
+                )
+              )}
             </CardContent>
           </Card>
 
@@ -48,7 +76,14 @@ const Index = () => {
               <CardTitle>Budget Status</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">Set up your monthly budget</p>
+              {renderCardContent(
+                budgetsLoading,
+                budgets?.length ? (
+                  <p>Budget information loaded</p>
+                ) : (
+                  <p className="text-muted-foreground">Set up your monthly budget</p>
+                )
+              )}
             </CardContent>
           </Card>
 
@@ -58,7 +93,14 @@ const Index = () => {
               <CardTitle>Financial Goals</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">Track your financial goals</p>
+              {renderCardContent(
+                goalsLoading,
+                goals?.length ? (
+                  <p>Goals information loaded</p>
+                ) : (
+                  <p className="text-muted-foreground">Track your financial goals</p>
+                )
+              )}
             </CardContent>
           </Card>
         </div>
@@ -69,7 +111,23 @@ const Index = () => {
             <CardTitle>Recent Transactions</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground">Import your transactions to get started</p>
+            {renderCardContent(
+              transactionsLoading,
+              transactions?.length ? (
+                <div className="space-y-2">
+                  {transactions.slice(0, 5).map((transaction) => (
+                    <div key={transaction.id} className="flex justify-between items-center">
+                      <span>{transaction.description}</span>
+                      <span className={transaction.amount >= 0 ? "text-green-600" : "text-red-600"}>
+                        ${Math.abs(transaction.amount).toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground">Import your transactions to get started</p>
+              )
+            )}
           </CardContent>
         </Card>
       </div>
