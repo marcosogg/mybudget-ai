@@ -85,7 +85,11 @@ export class ImportService {
       throw new Error("Failed to fetch import history");
     }
 
-    return data || [];
+    // Ensure the status is properly typed
+    return (data || []).map(session => ({
+      ...session,
+      status: session.status as 'completed' | 'failed'
+    }));
   }
 
   async undoImport(importSessionId: string): Promise<void> {
