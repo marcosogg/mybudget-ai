@@ -94,7 +94,7 @@ const ImportHistory = () => {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-2">
             <History className="h-5 w-5" />
             <CardTitle>Import History</CardTitle>
@@ -129,24 +129,24 @@ const ImportHistory = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Month</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Transactions</TableHead>
-                  <TableHead>Valid</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="whitespace-nowrap">Date</TableHead>
+                  <TableHead className="whitespace-nowrap">Month</TableHead>
+                  <TableHead className="whitespace-nowrap">Status</TableHead>
+                  <TableHead className="whitespace-nowrap">Transactions</TableHead>
+                  <TableHead className="whitespace-nowrap">Valid</TableHead>
+                  <TableHead className="whitespace-nowrap text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredHistory.map((session: ImportSession) => (
                   <TableRow key={session.id}>
-                    <TableCell>
+                    <TableCell className="whitespace-nowrap">
                       {format(new Date(session.created_at || ''), 'MMM d, yyyy HH:mm')}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="whitespace-nowrap">
                       {format(new Date(session.month), 'MMMM yyyy')}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="whitespace-nowrap">
                       <span className="flex items-center gap-1">
                         {session.status === 'completed' ? (
                           <CheckCircle className="h-4 w-4 text-green-500" />
@@ -156,8 +156,8 @@ const ImportHistory = () => {
                         {session.status}
                       </span>
                     </TableCell>
-                    <TableCell>{session.transaction_count}</TableCell>
-                    <TableCell>{session.valid_transaction_count}</TableCell>
+                    <TableCell className="whitespace-nowrap">{session.transaction_count}</TableCell>
+                    <TableCell className="whitespace-nowrap">{session.valid_transaction_count}</TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-2">
                         <Sheet>
@@ -166,12 +166,13 @@ const ImportHistory = () => {
                               variant="outline"
                               size="sm"
                               onClick={() => setSelectedImportId(session.id)}
+                              className="whitespace-nowrap"
                             >
                               <Eye className="mr-1 h-4 w-4" />
                               Details
                             </Button>
                           </SheetTrigger>
-                          <SheetContent side="right" className="w-full sm:w-[540px]">
+                          <SheetContent side="right" className="w-full sm:max-w-[800px]">
                             <SheetHeader>
                               <SheetTitle>Import Details</SheetTitle>
                               <SheetDescription>
@@ -188,6 +189,7 @@ const ImportHistory = () => {
                           size="sm"
                           onClick={() => handleUndo(session.id)}
                           disabled={undoMutation.isPending}
+                          className="whitespace-nowrap"
                         >
                           <Undo2 className="mr-1 h-4 w-4" />
                           {undoMutation.isPending ? 'Undoing...' : 'Undo'}
