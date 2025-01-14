@@ -51,7 +51,7 @@ export default function Events() {
           title,
           start_time,
           end_time,
-          creator:profiles!events_creator_id_fkey(username)
+          creator:profiles(username)
         `)
         .order("start_time", { ascending: sortOrder === "asc" });
 
@@ -75,7 +75,13 @@ export default function Events() {
         throw error;
       }
 
-      return data as Event[];
+      // Transform the data to match the Event type
+      return (data as any[]).map((event) => ({
+        ...event,
+        creator: {
+          username: event.creator?.username || "Unknown User",
+        },
+      })) as Event[];
     },
   });
 
