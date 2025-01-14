@@ -31,6 +31,12 @@ export const BudgetForm = ({ onSuccess, onCancel }: BudgetFormProps) => {
 
     setIsLoading(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error("User not authenticated");
+      }
+
       const currentDate = new Date();
       const firstDayOfMonth = new Date(
         currentDate.getFullYear(),
@@ -44,6 +50,7 @@ export const BudgetForm = ({ onSuccess, onCancel }: BudgetFormProps) => {
           category,
           amount: parseFloat(amount),
           month: firstDayOfMonth,
+          user_id: user.id
         });
 
       if (error) throw error;
