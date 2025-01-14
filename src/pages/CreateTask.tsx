@@ -72,11 +72,19 @@ export default function CreateTask() {
     try {
       setIsSubmitting(true);
       
+      // Get the current user's ID
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error("User not authenticated");
+      }
+
       const { error } = await supabase.from("tasks").insert({
         title: values.title,
         description: values.description || null,
         due_date: values.dueDate ? values.dueDate.toISOString() : null,
         assignee_id: values.assigneeId || null,
+        creator_id: user.id, // Add the creator_id field
       });
 
       if (error) throw error;
