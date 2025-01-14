@@ -28,7 +28,18 @@ export const DetailedImportView = ({ importId }: DetailedImportViewProps) => {
         .order('date', { ascending: false });
 
       if (error) throw error;
-      return data as Transaction[];
+      
+      // Map the database fields to our Transaction interface
+      return (data || []).map((t): Transaction => ({
+        date: t.date,
+        description: t.description || '',
+        amount: t.amount.toString(),
+        category: t.category,
+        isValid: t.is_valid,
+        invalidReason: t.invalid_reason,
+        type: t.type as 'income' | 'expense',
+        original_description: t.original_description
+      }));
     },
   });
 
@@ -63,8 +74,8 @@ export const DetailedImportView = ({ importId }: DetailedImportViewProps) => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {transactions.map((transaction) => (
-            <TableRow key={transaction.id}>
+          {transactions.map((transaction, index) => (
+            <TableRow key={index}>
               <TableCell>
                 {format(new Date(transaction.date), 'MMM d, yyyy')}
               </TableCell>
@@ -79,12 +90,12 @@ export const DetailedImportView = ({ importId }: DetailedImportViewProps) => {
               <TableCell>{transaction.category}</TableCell>
               <TableCell>
                 <span className="flex items-center gap-1">
-                  {transaction.is_valid ? (
+                  {transaction.isValid ? (
                     <CheckCircle className="h-4 w-4 text-green-500" />
                   ) : (
                     <XCircle className="h-4 w-4 text-red-500" />
                   )}
-                  {transaction.is_valid ? 'Valid' : transaction.invalid_reason}
+                  {transaction.isValid ? 'Valid' : transaction.invalidReason}
                 </span>
               </TableCell>
             </TableRow>
