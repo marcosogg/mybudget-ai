@@ -5,7 +5,7 @@ export interface Transaction {
   category?: string;
   isValid: boolean;
   invalidReason?: string;
-  type?: 'income' | 'expense';
+  type: string;
   original_description?: string;
 }
 

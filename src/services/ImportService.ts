@@ -37,6 +37,7 @@ export class ImportService {
         category: t.category || 'Other',
         description: t.description,
         date: date.toISOString().split('T')[0], // Format as YYYY-MM-DD
+        type: t.type || 'expense', // Use the original type from the CSV
         is_valid: t.isValid,
         invalid_reason: t.invalidReason,
         original_description: t.original_description
@@ -55,7 +56,7 @@ export class ImportService {
       console.error("Error importing transactions:", error);
       return {
         success: false,
-        message: "Failed to import transactions"
+        message: error.message || "Failed to import transactions"
       };
     }
 

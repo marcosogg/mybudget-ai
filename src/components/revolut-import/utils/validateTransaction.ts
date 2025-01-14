@@ -6,7 +6,9 @@ export const validateTransaction = (transaction: any): Transaction => {
     description: transaction.Description || transaction.description || "",
     amount: transaction.Amount || transaction.amount || "",
     category: transaction.Category || transaction.category || "Other",
+    type: transaction.Type || transaction.type || "expense",
     isValid: true,
+    original_description: transaction.Description || transaction.description || ""
   };
 
   // Validate date
@@ -26,6 +28,11 @@ export const validateTransaction = (transaction: any): Transaction => {
   if (!result.description || result.description.trim().length === 0) {
     result.isValid = false;
     result.invalidReason = "Missing description";
+  }
+
+  // Store original type from CSV
+  if (!result.type) {
+    result.type = amount >= 0 ? "income" : "expense";
   }
 
   return result;
